@@ -1,9 +1,18 @@
-# Status Deck 
-
-Status Deck is a  simple **API health monitoring platform** using FastAPI, Prisma, WebSockets, and Redis to track, alert, and display service statuses in real-time.
 
 
-##  Local Development
+# Status Deck
+
+
+
+Status Deck is a simple ****API health monitoring platform**** using FastAPI, Prisma, WebSockets, and Redis to track, alert, and display service statuses in real-time.
+
+
+
+---
+
+
+
+## Local Development
 
 
 
@@ -75,7 +84,7 @@ to cleanly terminate all services.
 
 
 
-###  Clear Cache
+### Clear Cache
 
 
 
@@ -116,3 +125,43 @@ or simply rerun:
 ./scripts/dev_run.sh
 
 ```
+
+
+
+---
+
+
+
+### Seed Test Users (Admin & User) for SLO Testing
+
+
+
+You can seed test users for ****local SLO testing**** using:
+
+
+
+```bash
+
+python prisma/seed.py
+
+```
+
+
+
+✅ This will:
+
+- Create or reuse an organization `Achme (achme.ai)`.
+
+- Remove any previous `admin@achme.ai` and `user@achme.ai`.
+
+- Seed fresh:
+
+  - ****Admin:**** `admin@achme.ai` / `12121212`
+
+  - ****User:**** `user@achme.ai` / `12121212`
+
+- Print clear status of creation or deletion in your terminal.
+
+
+
+> ****Note:**** Update and rerun this script anytime you need a clean local environment with pre-created admin and user credentials.

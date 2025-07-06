@@ -1,3 +1,6 @@
+# Status Deck 
+
+Status Deck is a  simple **API health monitoring platform** using FastAPI, Prisma, WebSockets, and Redis to track, alert, and display service statuses in real-time.
 
 
 ##  Local Development

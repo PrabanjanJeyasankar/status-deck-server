@@ -1,0 +1,142 @@
+generator client {
+  provider = "prisma-client-py"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id         String     @id @default(cuid())        // Unique org ID, auto-generated
+  name       String     @unique                     // Org name, unique
+  domain     String     @unique                     // Org domain, unique
+  users      User[]                                 // Users in this org
+  services   Service[]                              // Services under this org
+  incidents  Incident[]                             // Incidents for this org
+  createdAt  DateTime   @default(now())             // Created timestamp
+}
+
+model User {
+  id             String        @id @default(cuid())      // Unique user ID
+  email          String        @unique                   // User email, unique
+  hashedPassword String                                  // Hashed password
+  name           String?                                 // Optional display name
+  role           UserRole     @default(USER)             // Role: ADMIN or USER
+  organizationId String                                   // FK to Organization
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime      @default(now())           // Created timestamp
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+model Service {
+  id             String         @id @default(cuid())      // Unique service ID
+  name           String                                     // Service name
+  status         ServiceStatus  @default(OPERATIONAL)      // Status of the service
+  description    String?                                   // Optional description
+  organizationId String                                     // FK to Organization
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  monitors       Monitor[]                                 // Monitors under this service
+  incidents      Incident[]                                // Incidents related to this service
+  createdAt      DateTime       @default(now())            // Created timestamp
+  updatedAt      DateTime       @updatedAt @default(now()) // Updated timestamp
+}
+
+enum ServiceStatus {
+  OPERATIONAL
+  DEGRADED
+  OUTAGE
+  MAINTENANCE
+}
+
+model Monitor {
+  id                String     @id @default(cuid())          // Unique monitor ID
+  name              String                                   // Monitor name
+  url               String                                   // URL to monitor
+  method            String                                   // HTTP method
+  interval          Int                                      // Check interval (minutes)
+  type              String                                   // "HTTP" etc.
+  headers           Json      @default("[]")                 // Custom headers
+  active            Boolean   @default(true)                 // Whether monitoring is active
+  degradedThreshold Int                                       // Degraded threshold (ms)
+  timeout           Int                                       // Timeout (ms)
+  serviceId         String                                    // FK to Service
+  service           Service   @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  monitoringResults MonitoringResult[]                       // Ping results
+  incidents         Incident[] @relation("MonitorIncidents") // Related incidents
+
+  createdAt         DateTime  @default(now())                // Created timestamp
+  updatedAt         DateTime  @updatedAt                     // Updated timestamp
+}
+
+model MonitoringResult {
+  id               String    @id @default(cuid())             // Unique result ID
+  monitorId        String                                     // FK to Monitor
+  monitor          Monitor   @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+  checkedAt        DateTime                                   // When check occurred
+  status           String                                     // "UP", "DEGRADED", "DOWN"
+  responseTimeMs   Int?                                       // Response time (nullable)
+  httpStatusCode   Int?                                       // HTTP status code (nullable)
+  error            String?                                    // Error message if failed
+}
+
+model Incident {
+  id                 String             @id @default(cuid())                   // Unique incident ID
+  organizationId     String                                                  // FK to Organization
+  organization       Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  title              String                                                  // Incident title
+  description        String?                                                 // Optional description
+  status             IncidentStatus     @default(OPEN)                       // Status of incident
+  severity           IncidentSeverity   @default(MEDIUM)                     // Severity level
+  autoCreated        Boolean            @default(false)                      // Whether auto-created
+
+  monitorId          String?                                                 // FK to Monitor
+  monitor            Monitor?            @relation("MonitorIncidents", fields: [monitorId], references: [id], onDelete: SetNull)
+
+  serviceId          String?                                                 // FK to Service
+  service            Service?            @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+
+  affectedServiceIds String[]                                               // Multi-service tracking
+
+  createdAt          DateTime           @default(now())                       // Created timestamp
+  updatedAt          DateTime           @updatedAt                            // Updated timestamp
+  resolvedAt         DateTime?                                               // Resolved timestamp
+  autoResolved       Boolean            @default(false)                      // Auto-resolved flag
+  createdByUserId    String?                                                 // User ID who created incident
+
+  updates            IncidentUpdate[]                                        // Updates related to incident
+
+  @@index([organizationId])
+  @@index([monitorId])
+  @@index([serviceId])
+}
+
+model IncidentUpdate {
+  id          String   @id @default(cuid())                // Unique update ID
+  incidentId  String                                     // FK to Incident
+  message     String                                     // Update message
+  createdAt   DateTime @default(now())                   // Created timestamp
+  createdBy   String?                                    // User ID who added update
+
+  incident    Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId])
+}
+
+enum IncidentStatus {
+  OPEN
+  RESOLVED
+  MONITORING
+}
+
+enum IncidentSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}

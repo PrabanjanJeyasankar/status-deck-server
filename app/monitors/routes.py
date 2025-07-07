@@ -1,12 +1,16 @@
-# monitors/routes.py
+# ---
+# File: monitors/routes.py
+# Purpose: FastAPI routes for managing monitors under a specific service,
+# including creation, retrieval, deletion, fetching monitoring results,
+# and computing monitoring statistics for dashboards and reports.
+# ---
 
 from .models import MonitorCreateRequest, MonitorResponse
 from fastapi.encoders import jsonable_encoder
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from statistics import median, quantiles
 from redis import asyncio as aioredis
 from datetime import datetime
-from fastapi import Query
 from typing import List, Optional
 from app.db import db
 import json
@@ -18,11 +22,25 @@ from app.monitors.failure_counter_manager import (
     KEY_PREFIX,
 )
 
+# ---
+# Initialize the router for monitor-related endpoints under the path:
+# /api/services/{serviceId}/monitors
+# ---
 router = APIRouter(prefix="/api/services/{serviceId}/monitors", tags=["Monitors"])
 
+# ---
+# Ensure Redis client uses REDIS_URL for production compatibility,
+# fallback to localhost for local development.
+# ---
+redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379")
+redis_client = aioredis.from_url(redis_url, decode_responses=True)
 
-redis_client = aioredis.from_url("redis://localhost", decode_responses=True)
-
+# ---
+# Create a new monitor under a specific service.
+# Accepts a MonitorCreateRequest payload and inserts it into the database.
+# Publishes a "monitor_created" event to Redis for the worker to pick up.
+# Returns the created monitor in a consistent response structure.
+# ---
 @router.post("", response_model=MonitorResponse)
 async def create_monitor(serviceId: str, data: MonitorCreateRequest):
     monitor = await db.monitor.create({
@@ -38,11 +56,9 @@ async def create_monitor(serviceId: str, data: MonitorCreateRequest):
         "serviceId": serviceId,
     })
 
-
     confirmed_monitor = await db.monitor.find_unique(where={"id": monitor.id})
     if not confirmed_monitor:
         raise HTTPException(status_code=500, detail="Monitor creation failed, could not confirm persistence.")
-
 
     await redis_client.publish("monitor_created", monitor.id)
 
@@ -62,6 +78,10 @@ async def create_monitor(serviceId: str, data: MonitorCreateRequest):
         updatedAt=monitor.updatedAt.isoformat(),
     )
 
+# ---
+# Retrieve all monitors under a specific service.
+# Returns a list of monitors in a consistent response structure.
+# ---
 @router.get("", response_model=List[MonitorResponse])
 async def get_monitors(serviceId: str):
     monitors = await db.monitor.find_many(
@@ -87,6 +107,10 @@ async def get_monitors(serviceId: str):
         for m in monitors
     ]
 
+# ---
+# Retrieve a specific monitor by its ID under a specific service.
+# Returns the monitor details if found, else raises a 404 error.
+# ---
 @router.get("/{monitorId}", response_model=MonitorResponse)
 async def get_monitor(serviceId: str, monitorId: str):
     monitor = await db.monitor.find_unique(where={"id": monitorId, "serviceId": serviceId})
@@ -108,25 +132,34 @@ async def get_monitor(serviceId: str, monitorId: str):
         updatedAt=monitor.updatedAt.isoformat(),
     )
 
-
+# ---
+# Delete a specific monitor under a specific service.
+# Cleans up Redis failure counters and publishes a "monitor_deleted" event to Redis.
+# ---
 @router.delete("/{monitorId}")
 async def delete_monitor(serviceId: str, monitorId: str):
     monitor = await db.monitor.find_unique(where={"id": monitorId, "serviceId": serviceId})
     if not monitor:
         raise HTTPException(status_code=404, detail="Monitor not found")
+
     await db.monitor.delete(where={"id": monitorId})
 
-    # Clean up Redis keys
+    # Clean up Redis keys and failure tracking
     await redis_client.delete(f"{KEY_PREFIX}{monitorId}")
     await clear_failed_pings(monitorId)
     await clear_first_down_timestamp(monitorId)
     print(f"[CLEANUP] Redis keys deleted for monitor {monitorId}")
 
-    #  publish to Redis so the worker can remove this monitor from scheduler
+    # Notify worker to remove this monitor from the scheduler
     await redis_client.publish("monitor_deleted", monitorId)
 
     return {"success": True, "message": "Monitor deleted successfully"}
 
+# ---
+# Retrieve monitoring results for a monitor under a specific service.
+# Supports optional filtering by date range and limit on the number of results.
+# Returns formatted monitoring result entries for frontend tables.
+# ---
 @router.get("/{monitorId}/results")
 async def get_monitor_results(
     serviceId: str,
@@ -143,7 +176,8 @@ async def get_monitor_results(
     if from_date:
         filters["checkedAt"] = {"gte": datetime.fromisoformat(from_date)}
     if to_date:
-        filters["checkedAt"] = {"lte": datetime.fromisoformat(to_date)}
+        filters["checkedAt"] = filters.get("checkedAt", {})
+        filters["checkedAt"]["lte"] = datetime.fromisoformat(to_date)
 
     results = await db.monitoringresult.find_many(
         where=filters,
@@ -163,8 +197,12 @@ async def get_monitor_results(
         for r in results
     ]
 
-
-
+# ---
+# Compute statistics for a monitor under a specific service.
+# Calculates uptime, failure count, last ping time, percentiles (p50, p75, p90, p95, p99),
+# and history graph for status over time.
+# Used for SLA reporting and monitor dashboards.
+# ---
 @router.get("/{monitorId}/stats")
 async def get_monitor_stats(
     serviceId: str,

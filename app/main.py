@@ -19,6 +19,15 @@ from app.db import db
 # Initialize FastAPI app instance
 app = FastAPI()
 
+@app.middleware("http")
+async def log_cors(request, call_next):
+    print(f"[CORS LOG] {request.method} {request.url}")
+    logger.info(f"[CORS] {request.method} {request.url}")
+    response = await call_next(request)
+    print(f"[CORS LOG] response headers: {response.headers.get('Access-Control-Allow-Origin')}")
+    logger.info(f"[CORS] Response Access-Control-Allow-Origin: {response.headers.get('access-control-allow-origin')}")
+    return response
+
 # CORS configuration for local development and future frontend deployments
 origins = [
     "http://localhost:5173",
@@ -46,18 +55,18 @@ app.add_middleware(
 # ---
 @app.on_event("startup")
 async def startup():
+    logger.info("[STARTUP] Connecting to database...")
     await db.connect()
-    # print("[INFO] Database connected successfully.")
-    # print("[INFO] WS broadcasting is handled by ws_broadcaster.py, not here.")
+    logger.info("[STARTUP] Database connected successfully.")
 
 # ---
 # On shutdown:
 # - Disconnect from the database cleanly
 # ---
-@app.on_event("shutdown")
 async def shutdown():
+    logger.info("[SHUTDOWN] Disconnecting from database...")
     await db.disconnect()
-    # print("[INFO] Database disconnected successfully.")
+    logger.info("[SHUTDOWN] Database disconnected successfully.")
 
 # ---
 # Include all routers for modular API endpoints:
@@ -87,9 +96,12 @@ if __name__ == "__main__":
     import uvicorn
     import os
 
+    port = int(os.environ.get("PORT", 8000))
+    logger.info(f"[RUN] Starting Uvicorn on 0.0.0.0:{port}")
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
-        port=int(os.environ.get("PORT", 8000)),
+        port=port,
         reload=False
     )
+

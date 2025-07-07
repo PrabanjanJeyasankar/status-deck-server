@@ -69,3 +69,17 @@ app.include_router(org_monitors.router)
 app.include_router(monitor_updates.router)
 app.include_router(incident_routes.router)
 app.include_router(incidents_ws_router.router)
+
+# ---
+# Entrypoint for Railway and local runs
+# ---
+if __name__ == "__main__":
+    import uvicorn
+    import os
+
+    uvicorn.run(
+        "app.main:app",
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", 8000)),
+        reload=False
+    )

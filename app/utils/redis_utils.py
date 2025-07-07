@@ -5,9 +5,10 @@
 
 from redis import asyncio as aioredis
 import json
+import os
 
 # Redis connection URL and client initialization for async publishing
-REDIS_URL = "redis://localhost"
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost")
 redis_client = aioredis.from_url(REDIS_URL, decode_responses=True)
 
 # ---

@@ -4,16 +4,18 @@
 # ---
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-import asyncio
 from redis import asyncio as aioredis
-import json
-import logging
 from typing import List, Dict
+import asyncio
+import logging
+import json
+import os
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-REDIS_URL = "redis://localhost"
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost")
+
 app = FastAPI()
 
 # ---

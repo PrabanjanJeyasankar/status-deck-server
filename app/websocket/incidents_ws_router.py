@@ -8,12 +8,14 @@ from redis import asyncio as aioredis
 import asyncio
 import json
 import logging
+import os
 
 # print("[WS Router] incidents_ws_router imported and registered.")
 
 router = APIRouter()
 
-REDIS_URL = "redis://localhost"
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost")
+
 logger = logging.getLogger(__name__)
 
 # ---

@@ -71,6 +71,13 @@ app.include_router(incident_routes.router)
 app.include_router(incidents_ws_router.router)
 
 # ---
+# Health check endpoint for Railway and Vercel readiness probes
+# ---
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
+
+# ---
 # Entrypoint for Railway and local runs
 # ---
 if __name__ == "__main__":

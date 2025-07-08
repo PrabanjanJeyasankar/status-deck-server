@@ -13,9 +13,9 @@ from redis import asyncio as aioredis
 from datetime import datetime
 from typing import List, Optional
 from app.db import db
+import logging
 import json
 import os
-
 
 from app.monitors.failure_counter_manager import (
     clear_failed_pings,
@@ -23,6 +23,8 @@ from app.monitors.failure_counter_manager import (
     redis_client,
     KEY_PREFIX,
 )
+
+logger = logging.getLogger(__name__)
 
 # ---
 # Initialize the router for monitor-related endpoints under the path:
@@ -80,8 +82,8 @@ async def create_monitor(serviceId: str, data: MonitorCreateRequest):
         degradedThreshold=monitor.degradedThreshold,
         timeout=monitor.timeout,
         serviceId=monitor.serviceId,
-        createdAt=monitor.createdAt.isoformat(),
-        updatedAt=monitor.updatedAt.isoformat(),
+        createdAt=monitor.createdAt.isoformat() if monitor.createdAt else None,
+        updatedAt=monitor.updatedAt.isoformat() if monitor.updatedAt else None,
     )
 
 # ---

@@ -7,8 +7,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 
-
 from app.monitors.latest_results import router as monitor_latest_router
+from fastapi import APIRouter, HTTPException, status, Depends, Request
 from app.services.routes import router as services_router
 from app.monitors.routes import router as monitor_router
 from app.incidents import routes as incident_routes
@@ -72,6 +72,18 @@ async def shutdown():
     logger.info("[SHUTDOWN] Disconnecting database...")
     await db.disconnect()
     logger.info("[SHUTDOWN] Database disconnected.")
+
+# ---
+# Global Exception
+# ---
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"[UNHANDLED EXCEPTION] {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": str(exc)},
+    )
+
 
 # ---
 # Include routers

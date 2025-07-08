@@ -34,7 +34,7 @@ router = APIRouter(prefix="/api/services/{serviceId}/monitors", tags=["Monitors"
 # Ensure Redis client uses REDIS_URL for production compatibility,
 # fallback to localhost for local development.
 # ---
-redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379")
+redis_url = os.environ.get("REDIS_PUBLIC_URL", "redis://localhost:6379")
 redis_client = aioredis.from_url(redis_url, decode_responses=True)
 
 # ---
@@ -62,7 +62,11 @@ async def create_monitor(serviceId: str, data: MonitorCreateRequest):
     if not confirmed_monitor:
         raise HTTPException(status_code=500, detail="Monitor creation failed, could not confirm persistence.")
 
-    await redis_client.publish("monitor_created", monitor.id)
+    try:
+        await redis_client.publish("monitor_created", monitor.id)
+    except Exception as e:
+        logger.error(f"[REDIS] Failed to publish 'monitor_created' for {monitor.id}: {e}")
+
 
     return MonitorResponse(
         id=monitor.id,

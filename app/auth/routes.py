@@ -47,7 +47,7 @@ def extract_org_from_email(email: str) -> str:
 # ---
 # Handle user signup with structured logging for debugging 502 issues.
 # ---
-@router.post("/api/signup", response_model=LoginResponse)
+@router.post("/signup", response_model=LoginResponse)
 async def signup(data: SignupRequest):
     try:
         logger.info(f"[SIGNUP] Received signup request for {data.email}")
@@ -86,7 +86,7 @@ async def signup(data: SignupRequest):
 # ---
 # Handle user login with structured logging for debugging 502 issues.
 # ---
-@router.post("/api/login", response_model=LoginResponse)
+@router.post("/login", response_model=LoginResponse)
 async def login(data: LoginRequest):
     try:
         logger.info(f"[LOGIN] Received login request for {data.email}")

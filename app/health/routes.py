@@ -13,7 +13,7 @@ from app.db import db
 # Track when the server started (for uptime calculation)
 START_TIME = time.time()
 
-router = APIRouter(prefix="/api/v1/health", tags=["Health"])
+router = APIRouter(prefix="/health", tags=["Health"])
 
 
 async def check_database() -> dict:
@@ -117,7 +117,7 @@ async def keepalive_status():
     Example Response (Enabled):
         {
             "enabled": true,
-            "target_url": "https://status-deck.onrender.com/health",
+            "target_url": "https://status-deck.onrender.com/api/v1/health",
             "interval_seconds": 300,
             "timeout_seconds": 10,
             "statistics": {

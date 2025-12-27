@@ -9,7 +9,7 @@ from .models import ServiceCreateRequest, ServiceUpdateRequest, ServiceResponse
 from pydantic import BaseModel
 from typing import List, Optional
 
-router = APIRouter(prefix="/api/services", tags=["Services"])
+router = APIRouter(prefix="/services", tags=["Services"])
 
 # ---
 # Create a new service under an organization.

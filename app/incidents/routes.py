@@ -11,8 +11,8 @@ from app.db import db as prisma
 from app.incidents.models import IncidentUpdate
 from app.monitors.failure_counter_manager import reset_failure_counter
 
-# Set up router for incident-related API endpoints under /api/incidents
-router = APIRouter(prefix="/api/incidents", tags=["Incidents"])
+# Set up router for incident-related API endpoints.
+router = APIRouter(prefix="/incidents", tags=["Incidents"])
 
 # ---
 # Create a new incident in the database.

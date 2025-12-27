@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 #          due to inactivity by periodically pinging the server's own health endpoint.
 #
 # Configuration via Environment Variables:
-#   - KEEPALIVE_URL: Full URL to ping (e.g., https://your-app.onrender.com/health)
+#   - KEEPALIVE_URL: Full URL to ping (e.g., https://your-app.onrender.com/api/v1/health)
 #                    If empty/unset, keep-alive is disabled.
 #   - KEEPALIVE_INTERVAL_SECONDS: Time between pings (default: 600 = 10 minutes)
 #                                  Recommended: 300-600 seconds (5-10 min)
@@ -74,7 +74,7 @@ async def keepalive_loop(url: str, interval_seconds: int, timeout_seconds: int) 
     This task runs indefinitely until the application shuts down.
     
     Args:
-        url: Full HTTP/HTTPS URL to ping (typically the /health endpoint)
+        url: Full HTTP/HTTPS URL to ping (typically the /api/v1/health endpoint)
         interval_seconds: Time to wait between ping attempts
         timeout_seconds: HTTP request timeout limit
         
@@ -149,6 +149,7 @@ async def keepalive_loop(url: str, interval_seconds: int, timeout_seconds: int) 
 # Initialize FastAPI app instance
 # ---
 app = FastAPI()
+API_PREFIX = "/api/v1"
 
 # ---
 # CORS Middleware for local and deployed frontend access
@@ -280,22 +281,15 @@ async def global_exception_handler(request: Request, exc: Exception):
 # ---
 # Include all routers for API structure and real-time monitoring
 # ---
-app.include_router(services_router)
-app.include_router(auth_router)
-app.include_router(monitor_router)
-app.include_router(monitor_latest_router)
-app.include_router(org_monitors.router)
-app.include_router(monitor_updates.router)
-app.include_router(incident_routes.router)
-app.include_router(incidents_ws_router.router)
-app.include_router(health_router)
-
-# ---
-# Health check endpoint for Railway & Vercel readiness probe
-# ---
-@app.get("/health")
-async def health_check():
-    return {"status": "ok"}
+app.include_router(services_router, prefix=API_PREFIX)
+app.include_router(auth_router, prefix=API_PREFIX)
+app.include_router(monitor_router, prefix=API_PREFIX)
+app.include_router(monitor_latest_router, prefix=API_PREFIX)
+app.include_router(org_monitors.router, prefix=API_PREFIX)
+app.include_router(monitor_updates.router, prefix=API_PREFIX)
+app.include_router(incident_routes.router, prefix=API_PREFIX)
+app.include_router(incidents_ws_router.router, prefix=API_PREFIX)
+app.include_router(health_router, prefix=API_PREFIX)
 
 # ---
 # Entrypoint for local development with Uvicorn

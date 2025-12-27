@@ -27,9 +27,9 @@ logger = logging.getLogger(__name__)
 
 # ---
 # Initialize the router for monitor-related endpoints under the path:
-# /api/services/{serviceId}/monitors
+# /services/{serviceId}/monitors
 # ---
-router = APIRouter(prefix="/api/services/{serviceId}/monitors", tags=["Monitors"])
+router = APIRouter(prefix="/services/{serviceId}/monitors", tags=["Monitors"])
 
 # ---
 # Ensure Redis client uses REDIS_URL for container compatibility,

@@ -10,9 +10,9 @@ from typing import List, Optional
 from pydantic import BaseModel
 
 # ---
-# Initialize the router with the /api/monitors prefix
+# Initialize the router for monitor-related endpoints.
 # ---
-router = APIRouter(prefix="/api/monitors", tags=["Monitors"])
+router = APIRouter(prefix="/monitors", tags=["Monitors"])
 
 # ---
 # Pydantic response model defining the structure of monitor data returned,

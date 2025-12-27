@@ -10,9 +10,9 @@ from .models import MonitorWithServiceResponse
 from typing import List
 
 # ---
-# Initialize the router under /api/monitors for all monitor-related endpoints.
+# Initialize the router for all monitor-related endpoints.
 # ---
-router = APIRouter(prefix="/api/monitors", tags=["Monitors"])
+router = APIRouter(prefix="/monitors", tags=["Monitors"])
 
 # ---
 # GET endpoint to retrieve all monitors under a given organization,

@@ -20,7 +20,6 @@ import os
 from app.monitors.failure_counter_manager import (
     clear_failed_pings,
     clear_first_down_timestamp,
-    redis_client,
     KEY_PREFIX,
 )
 
@@ -33,10 +32,10 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/services/{serviceId}/monitors", tags=["Monitors"])
 
 # ---
-# Ensure Redis client uses REDIS_URL for production compatibility,
-# fallback to localhost for local development.
+# Ensure Redis client uses REDIS_URL for container compatibility,
+# fallback to REDIS_PUBLIC_URL or localhost for local development.
 # ---
-redis_url = os.environ.get("REDIS_PUBLIC_URL", "redis://localhost:6379")
+redis_url = os.environ.get("REDIS_URL") or os.environ.get("REDIS_PUBLIC_URL") or "redis://localhost:6379"
 redis_client = aioredis.from_url(redis_url, decode_responses=True)
 
 # ---
@@ -196,7 +195,7 @@ async def get_monitor_results(
     return [
         {
             "id": r.id,
-            "checkedAt": r.checkedAt.astimezone().strftime("%Y-%m-%d %I:%M %p"),
+            "checkedAt": r.checkedAt.astimezone().isoformat(),
             "status": r.status,
             "responseTimeMs": r.responseTimeMs,
             "httpStatusCode": r.httpStatusCode,
@@ -260,7 +259,7 @@ async def get_monitor_stats(
         p95 = qs[94]
         p99 = qs[98]
 
-    last_ping = results[-1].checkedAt.astimezone().strftime("%Y-%m-%d %I:%M %p")
+    last_ping = results[-1].checkedAt.astimezone().isoformat()
 
     history_graph = [
         {"timestamp": r.checkedAt.astimezone().isoformat(), "status": r.status}

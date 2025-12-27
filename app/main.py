@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import logging
 import asyncio
+import os
 
 from app.db import db
 
@@ -21,6 +22,7 @@ from app.monitors import org_monitors
 from app.incidents import routes as incident_routes
 from app.websocket import monitor_updates, incidents_ws_router
 from app.websocket import redis_listener
+from app.health.routes import router as health_router
 
 # ---
 # Logging Configuration
@@ -36,13 +38,12 @@ app = FastAPI()
 # ---
 # CORS Middleware for local and deployed frontend access
 # ---
+cors_env = os.environ.get("CORS_ALLOW_ORIGINS", "")
+allowed_origins = [origin.strip() for origin in cors_env.split(",") if origin.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://status-deck-client.vercel.app",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173"
-    ],
+    allow_origins=allowed_origins,
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -104,6 +105,7 @@ app.include_router(org_monitors.router)
 app.include_router(monitor_updates.router)
 app.include_router(incident_routes.router)
 app.include_router(incidents_ws_router.router)
+app.include_router(health_router)
 
 # ---
 # Health check endpoint for Railway & Vercel readiness probe
